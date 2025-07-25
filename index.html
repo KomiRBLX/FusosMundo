@@ -2,13 +2,54 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Relógios Mundiais</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⏰ Fusos horário mundiais - @Komi</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <style>
+    :root {
+      --bg-light: #f4f4f8;
+      --bg-dark: #1e1e1e;
+      --card-light: #fff;
+      --card-dark: #2c2c2c;
+      --text-light: #222;
+      --text-dark: #eee;
+      --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      --font: 'Courier New', monospace;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f8;
       margin: 0;
-      padding: 40px;
+      padding: 20px;
+      font-family: var(--font);
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .title {
+      font-size: 1.8rem;
+      margin-bottom: 30px;
+      font-weight: bold;
+    }
+
+    .theme-toggle {
+      margin-bottom: 20px;
+      cursor: pointer;
+      padding: 5px 15px;
+      border: none;
+      border-radius: 10px;
+      background-color: #ccc;
+    }
+
+    .clocks-container {
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
@@ -16,103 +57,139 @@
     }
 
     .clock {
-      background: #fff;
+      background-color: var(--card-light);
       border-radius: 20px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 20px 30px;
+      box-shadow: var(--shadow);
+      padding: 20px;
       width: 240px;
       text-align: center;
+      transition: transform 0.3s, background-color 0.3s;
+      cursor: pointer;
     }
 
-    .title {
-      font-size: 1.2rem;
-      font-weight: 600;
+    .dark .clock {
+      background-color: var(--card-dark);
+    }
+
+    .clock:active {
+      transform: scale(1.02);
+    }
+
+    .clock.focused {
+      transform: scale(1.1);
+      z-index: 10;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .clock .title {
+      font-size: 1.1rem;
       margin-bottom: 10px;
-      color: #333;
     }
 
-    .time {
+    .clock .time {
       font-size: 2rem;
       font-weight: bold;
-      color: #222;
+      letter-spacing: 2px;
+    }
+
+    .clock .date {
+      font-size: 0.9rem;
+      margin-top: 10px;
+      opacity: 0.7;
+    }
+
+    .warning {
+      font-size: 0.8rem;
+      color: red;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
-
-  <div class="clock">
-    <div class="title">EHT (Havaí)</div>
-    <div class="time" id="EHT"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">EST (Nova York)</div>
-    <div class="time" id="EST"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Brasil</div>
-    <div class="time" id="BR"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Tempo Internacional (UTC)</div>
-    <div class="time" id="UTC"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">WEST (Portugal)</div>
-    <div class="time" id="WEST"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Europa Central</div>
-    <div class="time" id="EU"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Tailândia</div>
-    <div class="time" id="TH"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Filipinas</div>
-    <div class="time" id="PH"></div>
-  </div>
-
-  <div class="clock">
-    <div class="title">Japão</div>
-    <div class="time" id="JP"></div>
-  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Trocar tema</button>
+  <div class="title">⏰ Fusos horário mundiais - @Komi</div>
+  <div class="clocks-container" id="clocks-container"></div>
 
   <script>
-    const clocks = [
-      { id: "EHT", timeZone: "Pacific/Honolulu" },
-      { id: "EST", timeZone: "America/New_York" },
-      { id: "BR", timeZone: "America/Sao_Paulo" },
-      { id: "UTC", timeZone: "UTC" },
-      { id: "WEST", timeZone: "Europe/Lisbon" },
-      { id: "EU", timeZone: "Europe/Berlin" },
-      { id: "TH", timeZone: "Asia/Bangkok" },
-      { id: "PH", timeZone: "Asia/Manila" },
-      { id: "JP", timeZone: "Asia/Tokyo" },
+    const timezones = [
+      { id: "EHT", label: "EHT (Havaí)", tz: "Pacific/Honolulu" },
+      { id: "EST", label: "EST (Nova York)", tz: "America/New_York" },
+      { id: "BR", label: "Brasil", tz: "America/Sao_Paulo" },
+      { id: "UTC", label: "Tempo Internacional", tz: "UTC" },
+      { id: "WEST", label: "WEST (Portugal)", tz: "Europe/Lisbon" },
+      { id: "CEST", label: "CEST (Europa Central Verão)", tz: "Europe/Berlin" },
+      { id: "TH", label: "Tailândia", tz: "Asia/Bangkok" },
+      { id: "PH", label: "Filipinas", tz: "Asia/Manila" },
+      { id: "ID", label: "Indonésia", tz: "Asia/Jakarta" },
+      { id: "JP", label: "Japão", tz: "Asia/Tokyo" },
     ];
+
+    const container = document.getElementById("clocks-container");
+
+    timezones.forEach(zone => {
+      const card = document.createElement("div");
+      card.className = "clock";
+      card.id = zone.id;
+      card.onclick = () => focusClock(zone.id);
+
+      card.innerHTML = `
+        <div class="title">${zone.label}</div>
+        <div class="time" id="${zone.id}-time">--:--:--</div>
+        <div class="date" id="${zone.id}-date">Carregando...</div>
+        <div class="warning" id="${zone.id}-warn"></div>
+      `;
+      container.appendChild(card);
+    });
 
     function updateClocks() {
       const now = new Date();
-      clocks.forEach(clock => {
-        const timeString = now.toLocaleTimeString('pt-BR', {
-          timeZone: clock.timeZone,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-        document.getElementById(clock.id).textContent = timeString;
+      timezones.forEach(zone => {
+        try {
+          const time = now.toLocaleTimeString('pt-BR', {
+            timeZone: zone.tz,
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+          });
+          const date = now.toLocaleDateString('pt-BR', {
+            timeZone: zone.tz,
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+          });
+
+          document.getElementById(`${zone.id}-time`).textContent = time;
+          document.getElementById(`${zone.id}-date`).textContent = date;
+          document.getElementById(`${zone.id}-warn`).textContent = "";
+        } catch (e) {
+          document.getElementById(`${zone.id}-warn`).textContent = "⚠ Fuso não suportado pelo navegador.";
+        }
       });
     }
 
     setInterval(updateClocks, 1000);
     updateClocks();
+
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    }
+
+    function loadTheme() {
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") document.body.classList.add("dark");
+    }
+
+    function focusClock(id) {
+      document.querySelectorAll('.clock').forEach(c => c.classList.remove('focused'));
+      const clock = document.getElementById(id);
+      clock.classList.add("focused");
+
+      if (!clock.dataset.original) {
+        clock.dataset.original = container.innerHTML;
+      } else {
+        container.innerHTML = clock.dataset.original;
+        updateClocks();
+      }
+    }
+
+    loadTheme();
   </script>
 </body>
 </html>
